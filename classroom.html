@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom | Virtualis College</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #0a2342;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            cursor: none;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: rgba(100, 180, 255, 0.5);
+            border-radius: 50%;
+        }
+        
+        #custom-cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000;
+            transition: width 0.2s, height 0.2s;
+        }
+        
+        .cursor-active {
+            background-color: rgba(255, 255, 255, 0.3);
+            width: 25px !important;
+            height: 25px !important;
+        }
+        
+        /* 3D Classroom Environment */
+        .classroom-environment {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+            z-index: 1;
+        }
+        
+        .classroom-floor {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(to bottom, rgba(30, 60, 100, 0.8), rgba(20, 40, 70, 0.8));
+            transform: rotateX(60deg);
+            transform-origin: bottom;
+            background-image: 
+                repeating-linear-gradient(90deg, 
+                    rgba(40, 70, 110, 0.8) 0px, 
+                    rgba(40, 70, 110, 0.8) 100px, 
+                    rgba(30, 60, 100, 0.8) 100px, 
+                    rgba(30, 60, 100, 0.8) 200px);
+        }
+        
+        .classroom-ceiling {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(to top, rgba(20, 40, 70, 0.8), rgba(10, 20, 40, 0.8));
+            transform: rotateX(-20deg);
+            transform-origin: top;
+        }
+        
+        .classroom-wall {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            background-color: rgba(30, 60, 100, 0.3);
+        }
+        
+        .classroom-wall.left {
+            left: -50%;
+            width: 50%;
+            transform: rotateY(90deg);
+            transform-origin: right;
+            background: linear-gradient(to right, rgba(20, 40, 70, 0.8), rgba(30, 60, 100, 0.8));
+        }
+        
+        .classroom-wall.right {
+            right: -50%;
+            width: 50%;
+            transform: rotateY(-90deg);
+            transform-origin: left;
+            background: linear-gradient(to left, rgba(20, 40, 70, 0.8), rgba(30, 60, 100, 0.8));
+        }
+        
+        .classroom-wall.front {
+            position: absolute;
+            width: 100%;
+            height: 60%;
+            top: 0;
+            background: linear-gradient(to bottom, rgba(20, 40, 70, 0.9), rgba(30, 60, 100, 0.9));
+            border-bottom: 5px solid rgba(100, 180, 255, 0.3);
+        }
+        
+        .ceiling-lights {
+            position: absolute;
+            top: 10%;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 2;
+        }
+        
+        .ceiling-light {
+            width: 60px;
+            height: 15px;
+            background-color: rgba(255, 255, 200, 0.8);
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(255, 255, 200, 0.6);
+            transform: rotateX(-20deg);
+            animation: lightFlicker 3s infinite alternate;
+        }
+        
+        @keyframes lightFlicker {
+            0%, 100% { opacity: 1; box-shadow: 0 0 20px rgba(255, 255, 200, 0.6); }
+            50% { opacity: 0.9; box-shadow: 0 0 15px rgba(255, 255, 200, 0.4); }
+        }
+        
+        /* Smart Board */
+        .smartboard {
+            position: absolute;
+            width: 70%;
+            height: 30%;
+            top: 15%;
+            left: 15%;
+            background: linear-gradient(to bottom, #1a1a1a, #333333);
+            border: 10px solid #444;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        
+        .smartboard::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 50%);
+            pointer-events: none;
+        }
+        
+        .smartboard-content {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .smartboard-text {
+            font-family: 'Segoe UI', sans-serif;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 2.5rem;
+            text-align: center;
+            padding: 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        
+        #drawing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+        
+        .smartboard-controls {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 5px 15px;
+            border-radius: 20px;
+            transition: bottom 0.3s ease;
+        }
+        
+        .smartboard:hover .smartboard-controls {
+            bottom: 10px;
+        }
+        
+        .smartboard-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .smartboard-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .smartboard-btn.clear {
+            background-color: #f44336;
+        }
+        
+        .smartboard-btn.white {
+            background-color: white;
+        }
+        
+        .smartboard-btn.blue {
+            background-color: #2196F3;
+        }
+        
+        .smartboard-btn.green {
+            background-color: #4CAF50;
+        }
+        
+        .smartboard-btn.yellow {
+            background-color: #FFEB3B;
+        }
+        
+        /* Teacher's desk */
+        .teacher-area {
+            position: absolute;
+            width: 15%;
+            height: 8%;
+            bottom: 50%;
+            left: 42.5%;
+            z-index: 10;
+            transform-style: preserve-3d;
+        }
+        
+        .teacher-desk {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(60, 100, 150, 0.9);
+            border: 2px solid rgba(100, 180, 255, 0.5);
+            transform: perspective(500px) rotateX(0deg);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+        
+        .teacher-items {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            transform: perspective(500px) rotateX(0deg) translateZ(5px);
+        }
+        
+        .teacher-item {
+            width: 20%;
+            height: 60%;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        
+        /* Student desks */
+        .student-desks {
+            position: absolute;
+            width: 80%;
+            height: 40%;
+            bottom: 5%;
+            left: 10%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 15px;
+            z-index: 10;
+        }
+        
+        .desk-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+        }
+        
+        .student-desk {
+            position: absolute;
+            width: 60%;
+            height: 50%;
+            top: 0;
+            left: 20%;
+            background-color: rgba(60, 100, 150, 0.8);
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            transform: perspective(500px) rotateX(0deg);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+        
+        .student-chair {
+            position: absolute;
+            width: 40%;
+            height: 20%;
+            bottom: 20%;
+            left: 30%;
+            background-color: rgba(40, 80, 130, 0.8);
+            transform: perspective(500px) rotateX(0deg);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+        
+        .desk-highlight .student-desk {
+            background-color: rgba(100, 180, 255, 0.6);
+            transform: perspective(500px) rotateX(0deg) translateY(-2px);
+            box-shadow: 0 5px 15px rgba(100, 180, 255, 0.4);
+        }
+        
+        .desk-highlight .student-chair {
+            background-color: rgba(60, 120, 180, 0.8);
+        }
+        
+        .desk-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Bookshelf */
+        .bookshelf {
+            position: absolute;
+            width: 15%;
+            height: 40%;
+            right: 5%;
+            top: 30%;
+            background-color: rgba(60, 100, 150, 0.8);
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 10px;
+            border-radius: 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .bookshelf:hover {
+            background-color: rgba(80, 120, 170, 0.8);
+            transform: scale(1.03);
+            box-shadow: 0 15px 30px rgba(100, 180, 255, 0.4);
+        }
+        
+        .shelf {
+            flex: 1;
+            background-color: rgba(40, 80, 130, 0.8);
+            border-radius: 3px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 5px;
+        }
+        
+        .book {
+            height: 80%;
+            width: 15%;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+        }
+        
+        .book:hover {
+            transform: translateY(-5px);
+        }
+        
+        .book:nth-child(1) { background-color: #f44336; }
+        .book:nth-child(2) { background-color: #2196f3; }
+        .book:nth-child(3) { background-color: #4caf50; }
+        .book:nth-child(4) { background-color: #ff9800; }
+        
+        /* Controls */
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+        
+        .control-btn {
+            background-color: rgba(39, 76, 119, 0.8);
+            color: white;
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .control-btn:hover {
+            background-color: rgba(100, 180, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(100, 180, 255, 0.5);
+            transform: translateY(-3px);
+        }
+        
+        /* Back button */
+        .back-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(39, 76, 119, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .back-btn:hover {
+            transform: scale(1.1);
+            background-color: rgba(39, 76, 119, 1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background-color: rgba(20, 40, 70, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            box-shadow: 0 0 30px rgba(100, 180, 255, 0.3);
+            color: white;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .modal-title {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 10px rgba(100, 180, 255, 0.5);
+        }
+        
+        .modal-description {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+        }
+        
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .subject-card {
+            background-color: rgba(39, 76, 119, 0.8);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(100, 180, 255, 0.2);
+        }
+        
+        .subject-card:hover {
+            background-color: rgba(60, 100, 150, 0.8);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(100, 180, 255, 0.3);
+            border-color: rgba(100, 180, 255, 0.5);
+        }
+        
+        .subject-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .subject-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .subject-description {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* Ambient lighting effect */
+        .classroom-container::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 30%, rgba(100, 180, 255, 0.1), transparent 70%);
+            pointer-events: none;
+        }
+        
+        /* Scrollbar styling */
+        .modal-content::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb {
+            background: rgba(100, 180, 255, 0.5);
+            border-radius: 5px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 180, 255, 0.7);
+        }
+        
+        /* Room info display */
+        .room-info {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background-color: rgba(39, 76, 119, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            color: white;
+            z-index: 100;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-width: 250px;
+        }
+        
+        .room-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .room-name {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .room-details {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .room-details p {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .room-details p::before {
+            content: '•';
+            color: rgba(100, 180, 255, 0.8);
+            font-size: 1.2rem;
+        }
+        
+        /* Student character */
+        #student {
+            position: absolute;
+            width: 30px;
+            height: 60px;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            transition: transform 0.2s ease;
+        }
+        
+        .student-head {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background-color: #FFE4C4;
+            border-radius: 50%;
+            z-index: 2;
+        }
+        
+        .student-hair {
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 12px;
+            background-color: #3a3a3a;
+            border-radius: 50% 50% 0 0;
+            z-index: 1;
+        }
+        
+        .student-body {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 25px;
+            background-color: rgba(39, 76, 119, 1);
+            border-radius: 8px 8px 0 0;
+            z-index: 2;
+        }
+        
+        .student-backpack {
+            position: absolute;
+            top: 22px;
+            left: 10%;
+            width: 15px;
+            height: 20px;
+            background-color: #C04000;
+            border-radius: 5px;
+            z-index: 1;
+        }
+        
+        .student-leg {
+            position: absolute;
+            width: 8px;
+            height: 20px;
+            background-color: #2c4366;
+            bottom: 0;
+            z-index: 2;
+            transform-origin: top;
+        }
+        
+        .student-leg.left {
+            left: 8px;
+        }
+        
+        .student-leg.right {
+            right: 8px;
+        }
+        
+        .student-shoe {
+            position: absolute;
+            width: 12px;
+            height: 4px;
+            background-color: #000;
+            bottom: 0;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .student-leg.left .student-shoe {
+            left: -2px;
+        }
+        
+        .student-leg.right .student-shoe {
+            right: -2px;
+        }
+        
+        .student-arm {
+            position: absolute;
+            width: 6px;
+            height: 20px;
+            background-color: rgba(39, 76, 119, 1);
+            top: 22px;
+            z-index: 1;
+            transform-origin: top;
+        }
+        
+        .student-arm.left {
+            left: 4px;
+        }
+        
+        .student-arm.right {
+            right: 4px;
+        }
+        
+        .student-hand {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: #FFE4C4;
+            bottom: 0;
+            border-radius: 50%;
+        }
+        
+        .student-shadow {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 8px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            filter: blur(3px);
+        }
+        
+        /* Controls hint */
+        .controls-hint {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            z-index: 500;
+        }
+        
+        .key-hint {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin: 0 3px;
+        }
+        
+        /* Interaction prompt */
+        .interaction-prompt {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #003366;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: bottom 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 200;
+        }
+        
+        .show-prompt {
+            bottom: 100px;
+        }
+        
+        /* Sitting animation */
+        .sitting {
+            transform: scale(0.8);
+            bottom: 10%;
+        }
+        
+        .sitting .student-leg {
+            height: 12px;
+            transform: rotateX(90deg);
+        }
+        
+        .sitting .student-arm {
+            transform: rotateZ(-30deg);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div class="particles" id="particles"></div>
+        
+        <div class="classroom-environment">
+            <div class="classroom-floor"></div>
+            <div class="classroom-ceiling"></div>
+            <div class="classroom-wall left"></div>
+            <div class="classroom-wall right"></div>
+            <div class="classroom-wall front"></div>
+            <div class="ceiling-lights">
+                <div class="ceiling-light"></div>
+                <div class="ceiling-light"></div>
+                <div class="ceiling-light"></div>
+                <div class="ceiling-light"></div>
+            </div>
+        </div>
+        
+        <div class="smartboard">
+            <div class="smartboard-content">
+                <div class="smartboard-text"></div>
+                <canvas id="drawing-canvas"></canvas>
+            </div>
+            <div class="smartboard-controls">
+                <button class="smartboard-btn clear" title="Clear board"></button>
+                <button class="smartboard-btn white" title="White"></button>
+                <button class="smartboard-btn blue" title="Blue"></button>
+                <button class="smartboard-btn green" title="Green"></button>
+                <button class="smartboard-btn yellow" title="Yellow"></button>
+            </div>
+        </div>
+        
+        <div class="teacher-area">
+            <div class="teacher-desk"></div>
+            <div class="teacher-items">
+                <div class="teacher-item"></div>
+                <div class="teacher-item"></div>
+            </div>
+        </div>
+        
+        <div class="student-desks">
+            <!-- Row 1 -->
+            <div class="desk-container" data-seat="1">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">1</div>
+            </div>
+            
+            <div class="desk-container" data-seat="2">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">2</div>
+            </div>
+            
+            <div class="desk-container" data-seat="3">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">3</div>
+            </div>
+            
+            <div class="desk-container" data-seat="4">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">4</div>
+            </div>
+            
+            <!-- Row 2 -->
+            <div class="desk-container" data-seat="5">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">5</div>
+            </div>
+            
+            <div class="desk-container" data-seat="6">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">6</div>
+            </div>
+            
+            <div class="desk-container" data-seat="7">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">7</div>
+            </div>
+            
+            <div class="desk-container" data-seat="8">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">8</div>
+            </div>
+            
+            <!-- Row 3 -->
+            <div class="desk-container" data-seat="9">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">9</div>
+            </div>
+            
+            <div class="desk-container" data-seat="10">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">10</div>
+            </div>
+            
+            <div class="desk-container" data-seat="11">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">11</div>
+            </div>
+            
+            <div class="desk-container" data-seat="12">
+                <div class="student-desk"></div>
+                <div class="student-chair"></div>
+                <div class="desk-label">12</div>
+            </div>
+        </div>
+        
+        <div class="bookshelf" onclick="openBookModal()">
+            <div class="shelf">
+                <div class="book"></div>
+                <div class="book"></div>
+                <div class="book"></div>
+                <div class="book"></div>
+            </div>
+            <div class="shelf">
+                <div class="book"></div>
+                <div class="book"></div>
+                <div class="book"></div>
+                <div class="book"></div>
+            </div>
+            <div class="shelf">
+                <div class="book"></div>
+                <div class="book"></div>
+                <div class="book"></div>
+                <div class="book"></div>
+            </div>
+        </div>
+        
+        <!-- Student character -->
+        <div id="student">
+            <div class="student-head"></div>
+            <div class="student-hair"></div>
+            <div class="student-body"></div>
+            <div class="student-backpack"></div>
+            <div class="student-arm left">
+                <div class="student-hand"></div>
+            </div>
+            <div class="student-arm right">
+                <div class="student-hand"></div>
+            </div>
+            <div class="student-leg left">
+                <div class="student-shoe"></div>
+            </div>
+            <div class="student-leg right">
+                <div class="student-shoe"></div>
+            </div>
+            <div class="student-shadow"></div>
+        </div>
+        
+        <div class="interaction-prompt" id="interaction-prompt">Press E to sit down</div>
+        
+        <div class="room-info">
+            <div class="room-number">S101</div>
+            <div class="room-name">Physics 101</div>
+            <div class="room-details">
+                <p>Prof. Johnson</p>
+                <p>Room Capacity: 30</p>
+                <p>Next Session: Monday, 10:00 AM</p>
+            </div>
+        </div>
+        
+        <div class="controls-hint">
+            <div>Move: <span class="key-hint">←</span><span class="key-hint">↑</span><span class="key-hint">→</span><span class="key-hint">↓</span></div>
+            <div>Sit: <span class="key-hint">E</span></div>
+        </div>
+        
+        <div class="back-btn" onclick="location.href='classroom-selection.html'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </div>
+        
+        <div id="custom-cursor"></div>
+    </div>
+    
+    <div class="modal" id="subject-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('subject-modal')">&times;</button>
+            <h2 class="modal-title">Physics 101 Materials</h2>
+            <p class="modal-description">Access course materials, assignments, and resources for this class.</p>
+            
+            <div class="subjects-grid">
+                <div class="subject-card" onclick="location.href='subject.html?id=lectures'">
+                    <div class="subject-icon">📝</div>
+                    <div class="subject-title">Lectures</div>
+                    <div class="subject-description">Class notes and presentations</div>
+                </div>
+                
+                <div class="subject-card" onclick="location.href='subject.html?id=assignments'">
+                    <div class="subject-icon">📋</div>
+                    <div class="subject-title">Assignments</div>
+                    <div class="subject-description">Homework and projects</div>
+                </div>
+                
+                <div class="subject-card" onclick="location.href='subject.html?id=experiments'">
+                    <div class="subject-icon">⚗️</div>
+                    <div class="subject-title">Lab Experiments</div>
+                    <div class="subject-description">Virtual physics experiments</div>
+                </div>
+                
+                <div class="subject-card" onclick="location.href='subject.html?id=exams'">
+                    <div class="subject-icon">📄</div>
+                    <div class="subject-title">Exams</div>
+                    <div class="subject-description">Practice tests and quizzes</div>
+                </div>
+                
+                <div class="subject-card" onclick="location.href='subject.html?id=discussions'">
+                    <div class="subject-icon">💬</div>
+                    <div class="subject-title">Discussions</div>
+                    <div class="subject-description">Class forums and chats</div>
+                </div>
+                
+                <div class="subject-card" onclick="location.href='subject.html?id=resources'">
+                    <div class="subject-icon">📚</div>
+                    <div class="subject-title">Resources</div>
+                    <div class="subject-description">Additional learning materials</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="book-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('book-modal')">&times;</button>
+            <h2 class="modal-title">Physics Reference Library</h2>
+            <p class="modal-description">Access textbooks, reference materials, and recommended readings for Physics 101.</p>
+            
+            <div class="subjects-grid">
+                <div class="subject-card" onclick="location.href='library.html?category=textbooks'">
+                    <div class="subject-icon">📘</div>
+                    <div class="subject-title">Textbooks</div>
+                    <div class="subject-description">Course textbooks and workbooks</div>
+                </div>
+                
+                <div class="subject-card" onclick="location.href='library.html?category=references'">
+                    <div class="subject-icon">📖</div>
+                    <div class="subject-title">Reference</div>
+                    <div class="subject-description">Physics encyclopedias and dictionaries</div>
+                </div>
+                
+                <div class="subject-card" onclick="location.href='library.html?category=journals'">
+                    <div class="subject-icon">📰</div>
+                    <div class="subject-title">Journals</div>
+                    <div class="subject-description">Academic physics journals and papers</div>
+                </div>
+                
+                <div class="subject-card" onclick="location.href='library.html?category=simulations'">
+                    <div class="subject-icon">🔬</div>
+                    <div class="subject-title">Simulations</div>
+                    <div class="subject-description">Interactive physics simulations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Variables
+        let cursorX = 0;
+        let cursorY = 0;
+        let studentX = window.innerWidth / 2;
+        let studentY = window.innerHeight * 0.7;
+        let isMovingUp = false;
+        let isMovingDown = false;
+        let isMovingLeft = false;
+        let isMovingRight = false;
+        let moveSpeed = 5;
+        let isWalking = false;
+        let isSitting = false;
+        let nearDesk = null;
+        let currentSeat = null;
+        let currentColor = 'white';
+        let isDrawing = false;
+        let canvas, ctx;
+        
+        // DOM elements
+        const customCursor = document.getElementById('custom-cursor');
+        const student = document.getElementById('student');
+        const interactionPrompt = document.getElementById('interaction-prompt');
+        const desks = document.querySelectorAll('.desk-container');
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            setupStudent();
+            setupSmartboard();
+            gameLoop();
+            
+            // Get room info from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomName = urlParams.get('room') || 'Physics 101';
+            const roomNumber = urlParams.get('number') || 'S101';
+            
+            // Update room information
+            // document.querySelector('.smartboard-text').textContent = `Welcome to ${roomName}`;
+            document.querySelector('.room-number').textContent = roomNumber;
+            document.querySelector('.room-name').textContent = roomName;
+            
+            // Update document title
+            document.title = `${roomName} | Virtualis College`;
+        });
+        
+        // Create background particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random position
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.opacity = Math.random() * 0.5 + 0.2;
+                
+                particlesContainer.appendChild(particle);
+                
+                // Gentle floating animation
+                setInterval(() => {
+                    const newX = parseFloat(particle.style.left) + (Math.random() * 2 - 1);
+                    const newY = parseFloat(particle.style.top) + (Math.random() * 2 - 1);
+                    
+                    particle.style.left = `${newX}px`;
+                    particle.style.top = `${newY}px`;
+                }, 2000);
+            }
+        }
+        
+        // Setup smartboard
+        function setupSmartboard() {
+            canvas = document.getElementById('drawing-canvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // Drawing events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', stopDrawing);
+            
+            // Setup color buttons
+            document.querySelector('.smartboard-btn.clear').addEventListener('click', clearCanvas);
+            document.querySelector('.smartboard-btn.white').addEventListener('click', () => setColor('white'));
+            document.querySelector('.smartboard-btn.blue').addEventListener('click', () => setColor('#2196F3'));
+            document.querySelector('.smartboard-btn.green').addEventListener('click', () => setColor('#4CAF50'));
+            document.querySelector('.smartboard-btn.yellow').addEventListener('click', () => setColor('#FFEB3B'));
+            
+            // Initial clear
+            clearCanvas();
+        }
+        
+        // Start drawing
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+        
+        // Draw on the canvas
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = currentColor;
+            
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+        
+        // Handle touch start for mobile
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+        
+        // Handle touch move for mobile
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+        
+        // Stop drawing
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+        
+        // Set drawing color
+        function setColor(color) {
+            currentColor = color;
+        }
+        
+        // Clear canvas
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+        }
+        
+        // Setup student character
+        function setupStudent() {
+            updateStudentPosition();
+            
+            // Add keyboard event listeners
+            document.addEventListener('keydown', function(e) {
+                if (isSitting) return; // Don't move if sitting
+                
+                switch(e.key) {
+                    case 'ArrowUp':
+                        isMovingUp = true;
+                        break;
+                    case 'ArrowDown':
+                        isMovingDown = true;
+                        break;
+                    case 'ArrowLeft':
+                        isMovingLeft = true;
+                        student.style.transform = 'scaleX(-1)';
+                        break;
+                    case 'ArrowRight':
+                        isMovingRight = true;
+                        student.style.transform = 'scaleX(1)';
+                        break;
+                    case 'e':
+                    case 'E':
+                        if (nearDesk && !isSitting) {
+                            sitDown();
+                        }
+                        break;
+                }
+                
+                // Start walking animation if any movement key is pressed
+                if (isMovingUp || isMovingDown || isMovingLeft || isMovingRight) {
+                    startWalkingAnimation();
+                }
+            });
+            
+            document.addEventListener('keyup', function(e) {
+                switch(e.key) {
+                    case 'ArrowUp':
+                        isMovingUp = false;
+                        break;
+                    case 'ArrowDown':
+                        isMovingDown = false;
+                        break;
+                    case 'ArrowLeft':
+                        isMovingLeft = false;
+                        break;
+                    case 'ArrowRight':
+                        isMovingRight = false;
+                        break;
+                }
+                
+                // Stop walking animation if no movement keys are pressed
+                if (!isMovingUp && !isMovingDown && !isMovingLeft && !isMovingRight) {
+                    stopWalkingAnimation();
+                }
+            });
+        }
+        
+        // Start walking animation
+        function startWalkingAnimation() {
+            if (isWalking) return;
+            
+            isWalking = true;
+            const leftLeg = student.querySelector('.student-leg.left');
+            const rightLeg = student.querySelector('.student-leg.right');
+            const leftArm = student.querySelector('.student-arm.left');
+            const rightArm = student.querySelector('.student-arm.right');
+            
+            let step = 0;
+            student.walkInterval = setInterval(() => {
+                step = (step + 1) % 4;
+                
+                // Animate legs and arms
+                if (step === 0 || step === 2) {
+                    leftLeg.style.transform = 'rotate(-20deg)';
+                    rightLeg.style.transform = 'rotate(20deg)';
+                    leftArm.style.transform = 'rotate(15deg)';
+                    rightArm.style.transform = 'rotate(-15deg)';
+                } else {
+                    leftLeg.style.transform = 'rotate(20deg)';
+                    rightLeg.style.transform = 'rotate(-20deg)';
+                    leftArm.style.transform = 'rotate(-15deg)';
+                    rightArm.style.transform = 'rotate(15deg)';
+                }
+            }, 200);
+        }
+        
+        // Stop walking animation
+        function stopWalkingAnimation() {
+            if (!isWalking) return;
+            
+            isWalking = false;
+            clearInterval(student.walkInterval);
+            
+            const leftLeg = student.querySelector('.student-leg.left');
+            const rightLeg = student.querySelector('.student-leg.right');
+            const leftArm = student.querySelector('.student-arm.left');
+            const rightArm = student.querySelector('.student-arm.right');
+            
+            leftLeg.style.transform = '';
+            rightLeg.style.transform = '';
+            leftArm.style.transform = '';
+            rightArm.style.transform = '';
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!isSitting) {
+                updateStudentPosition();
+                checkDeskProximity();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Update student position
+        function updateStudentPosition() {
+            // Calculate movement
+            let dx = 0;
+            let dy = 0;
+            
+            if (isMovingUp) dy -= moveSpeed;
+            if (isMovingDown) dy += moveSpeed;
+            if (isMovingLeft) dx -= moveSpeed;
+            if (isMovingRight) dx += moveSpeed;
+            
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                const factor = 1 / Math.sqrt(2);
+                dx *= factor;
+                dy *= factor;
+            }
+            
+            // Update position
+            studentX += dx;
+            studentY += dy;
+            
+            // Keep student within bounds
+            studentX = Math.max(20, Math.min(window.innerWidth - 20, studentX));
+            studentY = Math.max(window.innerHeight * 0.5, Math.min(window.innerHeight - 100, studentY));
+            
+            // Update student element position
+            student.style.left = studentX + 'px';
+            student.style.top = studentY + 'px';
+        }
+        
+        // Check if student is near a desk
+        function checkDeskProximity() {
+            let foundNearDesk = false;
+            
+            desks.forEach(desk => {
+                const deskRect = desk.getBoundingClientRect();
+                const deskCenterX = deskRect.left + deskRect.width / 2;
+                const deskCenterY = deskRect.top + deskRect.height / 2;
+                
+                const distance = Math.sqrt(
+                    Math.pow(studentX - deskCenterX, 2) + 
+                    Math.pow(studentY - deskCenterY, 2)
+                );
+                
+                // If student is near a desk
+                if (distance < 50) {
+                    foundNearDesk = true;
+                    nearDesk = desk;
+                    desk.classList.add('desk-highlight');
+                    interactionPrompt.textContent = `Press E to sit at Seat ${desk.dataset.seat}`;
+                    interactionPrompt.classList.add('show-prompt');
+                } else {
+                    desk.classList.remove('desk-highlight');
+                }
+            });
+            
+            if (!foundNearDesk) {
+                nearDesk = null;
+                interactionPrompt.classList.remove('show-prompt');
+            }
+        }
+        
+        // Sit down at desk
+        function sitDown() {
+            if (!nearDesk) return;
+            
+            // Sit down
+            isSitting = true;
+            student.classList.add('sitting');
+            
+            // Position student at the chair
+            const chairRect = nearDesk.querySelector('.student-chair').getBoundingClientRect();
+            studentX = chairRect.left + chairRect.width / 2;
+            studentY = chairRect.top + chairRect.height / 2 - 10;
+            student.style.left = studentX + 'px';
+            student.style.top = studentY + 'px';
+            
+            interactionPrompt.classList.remove('show-prompt');
+            currentSeat = nearDesk.dataset.seat;
+            
+            // Open subject modal after sitting
+            setTimeout(() => {
+                openSubjectModal();
+            }, 1000);
+        }
+        
+        // Open subject modal
+        function openSubjectModal() {
+            document.getElementById('subject-modal').classList.add('active');
+        }
+        
+        // Open book modal
+        function openBookModal() {
+            document.getElementById('book-modal').classList.add('active');
+        }
+        
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        // Mouse move for custom cursor
+        document.addEventListener('mousemove', function(e) {
+            cursorX = e.clientX;
+            cursorY = e.clientY;
+            customCursor.style.left = cursorX + 'px';
+            customCursor.style.top = cursorY + 'px';
+        });
+        
+        // Click event for cursor animation
+        document.addEventListener('mousedown', function() {
+            customCursor.classList.add('cursor-active');
+        });
+        
+        document.addEventListener('mouseup', function() {
+            customCursor.classList.remove('cursor-active');
+        });
+        
+        // Close modals when clicking outside content
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (canvas) {
+                // Save current drawing
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Resize canvas
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                // Restore drawing
+                ctx.putImageData(imageData, 0, 0);
+            }
+        });
+    </script>
+</body>
+</html>

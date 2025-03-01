@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Selection | Virtualis College</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #0a2342;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            cursor: none;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: rgba(100, 180, 255, 0.5);
+            border-radius: 50%;
+        }
+        
+        #custom-cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000;
+            transition: width 0.2s, height 0.2s;
+        }
+        
+        .cursor-active {
+            background-color: rgba(255, 255, 255, 0.3);
+            width: 25px !important;
+            height: 25px !important;
+        }
+        
+        /* Building Selection */
+        .building-selection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 10;
+        }
+        
+        /* Page title */
+        .page-title {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 0 0 15px rgba(100, 180, 255, 0.7);
+            text-align: center;
+            z-index: 10;
+        }
+        
+        /* 3D Building Environment */
+        .building-environment {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .building-floor {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(to bottom, rgba(30, 60, 100, 0.8), rgba(20, 40, 70, 0.8));
+            transform: rotateX(60deg);
+            transform-origin: bottom;
+            background-image: 
+                repeating-linear-gradient(90deg, 
+                    rgba(40, 70, 110, 0.8) 0px, 
+                    rgba(40, 70, 110, 0.8) 100px, 
+                    rgba(30, 60, 100, 0.8) 100px, 
+                    rgba(30, 60, 100, 0.8) 200px);
+        }
+        
+        .building-ceiling {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(to top, rgba(20, 40, 70, 0.8), rgba(10, 20, 40, 0.8));
+            transform: rotateX(-20deg);
+            transform-origin: top;
+        }
+        
+        .building-wall {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            background-color: rgba(30, 60, 100, 0.3);
+        }
+        
+        .building-wall.left {
+            left: -50%;
+            width: 50%;
+            transform: rotateY(90deg);
+            transform-origin: right;
+            background: linear-gradient(to right, rgba(20, 40, 70, 0.8), rgba(30, 60, 100, 0.8));
+        }
+        
+        .building-wall.right {
+            right: -50%;
+            width: 50%;
+            transform: rotateY(-90deg);
+            transform-origin: left;
+            background: linear-gradient(to left, rgba(20, 40, 70, 0.8), rgba(30, 60, 100, 0.8));
+        }
+        
+        .ceiling-lights {
+            position: absolute;
+            top: 10%;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 2;
+        }
+        
+        .ceiling-light {
+            width: 60px;
+            height: 15px;
+            background-color: rgba(255, 255, 200, 0.8);
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(255, 255, 200, 0.6);
+            transform: rotateX(-20deg);
+            animation: lightFlicker 3s infinite alternate;
+        }
+        
+        @keyframes lightFlicker {
+            0%, 100% { opacity: 1; box-shadow: 0 0 20px rgba(255, 255, 200, 0.6); }
+            50% { opacity: 0.9; box-shadow: 0 0 15px rgba(255, 255, 200, 0.4); }
+        }
+        
+        .ceiling-light:nth-child(1) { animation-delay: 0.5s; }
+        .ceiling-light:nth-child(2) { animation-delay: 1.2s; }
+        .ceiling-light:nth-child(3) { animation-delay: 0.7s; }
+        .ceiling-light:nth-child(4) { animation-delay: 1.5s; }
+        
+        .filter-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .filter-btn {
+            background-color: rgba(39, 76, 119, 0.8);
+            color: white;
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .filter-btn.active {
+            background-color: rgba(100, 180, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(100, 180, 255, 0.5);
+        }
+        
+        .filter-btn:hover:not(.active) {
+            background-color: rgba(39, 76, 119, 1);
+            transform: translateY(-3px);
+        }
+        
+        /* Classroom doors container */
+        .classrooms-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+            perspective: 1000px;
+        }
+        
+        /* Classroom door styling */
+        .classroom-door-container {
+            position: relative;
+            width: 120px;
+            height: 220px;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: all 0.3s ease;
+        }
+        
+        .classroom-door-container:hover {
+            transform: scale(1.05) translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .classroom-door-frame {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(20, 40, 70, 0.8);
+            border-radius: 5px;
+            border: 3px solid rgba(60, 100, 150, 0.8);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .classroom-door {
+            position: absolute;
+            width: 90%;
+            height: 90%;
+            top: 5%;
+            left: 5%;
+            background-color: rgba(30, 60, 100, 0.9);
+            border-radius: 3px;
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            transform-origin: left;
+            transition: transform 0.5s ease;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) inset;
+        }
+        
+        .classroom-door-container:hover .classroom-door {
+            transform: rotateY(-15deg);
+            box-shadow: 0 0 15px rgba(100, 180, 255, 0.5);
+        }
+        
+        .door-number {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            z-index: 2;
+        }
+        
+        .door-title {
+            position: absolute;
+            top: 45px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            padding: 0 10px;
+            z-index: 2;
+        }
+        
+        .door-window {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 40px;
+            background-color: rgba(100, 180, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            box-shadow: 0 0 10px rgba(100, 180, 255, 0.2) inset;
+        }
+        
+        .door-handle {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            width: 10px;
+            height: 20px;
+            background-color: rgba(255, 206, 0, 0.8);
+            border-radius: 3px;
+            box-shadow: 0 0 5px rgba(255, 206, 0, 0.5);
+        }
+        
+        .door-info {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.7rem;
+            padding: 0 5px;
+        }
+        
+        .door-type-indicator {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 3;
+        }
+        
+        .door-type-class {
+            background-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        .door-type-lab {
+            background-color: #2196F3;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+        }
+        
+        .door-type-meeting {
+            background-color: #FF9800;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+        }
+        
+        /* Back button */
+        .back-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(39, 76, 119, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            border: 2px solid rgba(100, 180, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .back-btn:hover {
+            transform: scale(1.1);
+            background-color: rgba(39, 76, 119, 1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Loading screen for transition */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0a2342;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
+            perspective: 1000px;
+        }
+        
+        #loading-screen.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .loader {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 8px solid rgba(100, 180, 255, 0.8);
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 1.2rem;
+            margin-top: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Enhanced Walking animation */
+        .walking-animation {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        
+        .corridor {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+        }
+        
+        .corridor-floor {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 150px;
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(60, 100, 150, 0.8),
+                rgba(60, 100, 150, 0.8) 40px,
+                rgba(50, 80, 120, 0.8) 40px,
+                rgba(50, 80, 120, 0.8) 80px
+            );
+            transform: rotateX(60deg);
+            transform-origin: bottom;
+            animation: floorMove 3s linear infinite;
+        }
+        
+        @keyframes floorMove {
+            from { background-position: 0 0; }
+            to { background-position: 0 80px; }
+        }
+        
+        .corridor-wall {
+            position: absolute;
+            height: 150px;
+            background-color: rgba(30, 60, 100, 0.8);
+            top: 0;
+        }
+        
+        .corridor-wall.left {
+            left: 0;
+            width: 50%;
+            transform: rotateY(30deg);
+            transform-origin: left;
+            background: linear-gradient(to right, rgba(30, 60, 100, 0.8), rgba(40, 80, 130, 0.8));
+        }
+        
+        .corridor-wall.right {
+            right: 0;
+            width: 50%;
+            transform: rotateY(-30deg);
+            transform-origin: right;
+            background: linear-gradient(to left, rgba(30, 60, 100, 0.8), rgba(40, 80, 130, 0.8));
+        }
+        
+        .corridor-ceiling {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 50px;
+            background-color: rgba(20, 40, 70, 0.8);
+            transform: rotateX(-20deg);
+            transform-origin: top;
+        }
+        
+        .corridor-lights {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            height: 10px;
+            z-index: 5;
+        }
+        
+        .light {
+            position: absolute;
+            top: 0;
+            width: 30px;
+            height: 8px;
+            background-color: rgba(255, 255, 200, 0.8);
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(255, 255, 200, 0.6);
+            animation: lightFlicker 2s infinite alternate;
+        }
+        
+        .light:nth-child(1) { left: 10%; animation-delay: 0.2s; }
+        .light:nth-child(2) { left: 30%; animation-delay: 0.5s; }
+        .light:nth-child(3) { left: 50%; animation-delay: 0.1s; }
+        .light:nth-child(4) { left: 70%; animation-delay: 0.7s; }
+        .light:nth-child(5) { left: 90%; animation-delay: 0.3s; }
+        
+        .corridor-doors {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+        }
+        
+        .corridor-door {
+            position: absolute;
+            width: 50px;
+            height: 80px;
+            background-color: rgba(20, 40, 80, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transform-style: preserve-3d;
+            animation: doorPass 6s linear infinite;
+            opacity: 0;
+        }
+        
+        .corridor-door:nth-child(1) { animation-delay: 0s; }
+        .corridor-door:nth-child(2) { animation-delay: 2s; }
+        .corridor-door:nth-child(3) { animation-delay: 4s; }
+        
+        .corridor-door.left {
+            left: 0;
+            transform-origin: left;
+        }
+        
+        .corridor-door.right {
+            right: 0;
+            transform-origin: right;
+        }
+        
+        @keyframes doorPass {
+            0% { 
+                transform: translateZ(-200px) scale(0.5); 
+                opacity: 0;
+            }
+            20% { 
+                opacity: 1;
+            }
+            80% {
+                opacity: 1;
+            }
+            100% { 
+                transform: translateZ(200px) scale(1.5); 
+                opacity: 0;
+            }
+        }
+        
+        .door-number {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .door-window {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 15px;
+            background-color: rgba(100, 180, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .door-handle {
+            position: absolute;
+            top: 50%;
+            right: 5px;
+            width: 6px;
+            height: 12px;
+            background-color: rgba(255, 206, 0, 0.8);
+            border-radius: 3px;
+        }
+        
+        .student-character {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 80px;
+            z-index: 10;
+            transform-style: preserve-3d;
+        }
+        
+        .student-head {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 25px;
+            background-color: #FFE4C4;
+            border-radius: 50%;
+            z-index: 2;
+        }
+        
+        .student-hair {
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 15px;
+            background-color: #3a3a3a;
+            border-radius: 50% 50% 0 0;
+            z-index: 1;
+        }
+        
+        .student-body {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 35px;
+            background-color: rgba(39, 76, 119, 1);
+            border-radius: 8px 8px 0 0;
+            z-index: 2;
+        }
+        
+        .student-backpack {
+            position: absolute;
+            top: 30px;
+            left: 10%;
+            width: 20px;
+            height: 25px;
+            background-color: #C04000;
+            border-radius: 5px;
+            z-index: 1;
+        }
+        
+        .student-leg {
+            position: absolute;
+            width: 10px;
+            height: 25px;
+            background-color: #2c4366;
+            bottom: 0;
+            z-index: 2;
+            transform-origin: top;
+        }
+        
+        .student-leg.left {
+            left: 12px;
+        }
+        
+        .student-leg.right {
+            right: 12px;
+        }
+        
+        .student-shoe {
+            position: absolute;
+            width: 14px;
+            height: 5px;
+            background-color: #000;
+            bottom: 0;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .student-leg.left .student-shoe {
+            left: -2px;
+        }
+        
+        .student-leg.right .student-shoe {
+            right: -2px;
+        }
+        
+        .student-arm {
+            position: absolute;
+            width: 8px;
+            height: 25px;
+            background-color: rgba(39, 76, 119, 1);
+            top: 30px;
+            z-index: 1;
+            transform-origin: top;
+        }
+        
+        .student-arm.left {
+            left: 5px;
+        }
+        
+        .student-arm.right {
+            right: 5px;
+        }
+        
+        .student-hand {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #FFE4C4;
+            bottom: 0;
+            border-radius: 50%;
+        }
+        
+        .student-shadow {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            filter: blur(3px);
+        }
+        
+        /* Player character */
+        #player {
+            position: absolute;
+            width: 40px;
+            height: 80px;
+            z-index: 100;
+            transform-style: preserve-3d;
+            transition: transform 0.2s ease;
+        }
+        
+        .player-highlight {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99;
+        }
+        
+        /* Controls hint */
+        .controls-hint {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            z-index: 500;
+        }
+        
+        .key-hint {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin: 0 3px;
+        }
+        
+        /* Notification */
+        #notification {
+            position: fixed;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            z-index: 500;
+            transition: top 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        #notification.show {
+            top: 20px;
+        }
+        
+        /* Interaction prompt */
+        .interaction-prompt {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #003366;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: bottom 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 200;
+        }
+        
+        .show-prompt {
+            bottom: 20px;
+        }
+        
+        /* Scrollbar styling */
+        .classrooms-container::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .classrooms-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        
+        .classrooms-container::-webkit-scrollbar-thumb {
+            background: rgba(100, 180, 255, 0.5);
+            border-radius: 5px;
+        }
+        
+        .classrooms-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 180, 255, 0.7);
+        }
+        
+        /* Progress bar */
+        .progress-container {
+            width: 300px;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: rgba(100, 180, 255, 0.8);
+            border-radius: 5px;
+            transition: width 0.1s linear;
+        }
+        
+        /* Room number highlight */
+        .highlight-room {
+            animation: roomHighlight 1s infinite alternate;
+        }
+        
+        @keyframes roomHighlight {
+            from { color: rgba(255, 255, 255, 0.8); }
+            to { color: rgba(255, 206, 0, 1); text-shadow: 0 0 5px rgba(255, 206, 0, 0.5); }
+        }
+        
+        /* Door highlight when player is near */
+        .door-highlight {
+            box-shadow: 0 0 20px rgba(255, 206, 0, 0.8);
+            transform: scale(1.05);
+        }
+        
+        .door-highlight .classroom-door {
+            transform: rotateY(-15deg);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div class="particles" id="particles"></div>
+        
+        <div class="building-environment">
+            <div class="building-floor"></div>
+            <div class="building-ceiling"></div>
+            <div class="building-wall left"></div>
+            <div class="building-wall right"></div>
+            <div class="ceiling-lights">
+                <div class="ceiling-light"></div>
+                <div class="ceiling-light"></div>
+                <div class="ceiling-light"></div>
+                <div class="ceiling-light"></div>
+            </div>
+        </div>
+        
+        <div class="building-selection">
+            <h1 class="page-title">Select a Classroom</h1>
+            
+            <div class="filter-options">
+                <button class="filter-btn active" onclick="filterRooms('all')">All Rooms</button>
+                <button class="filter-btn" onclick="filterRooms('class')">Classrooms</button>
+                <button class="filter-btn" onclick="filterRooms('lab')">Laboratories</button>
+                <button class="filter-btn" onclick="filterRooms('meeting')">Meeting Spaces</button>
+            </div>
+            
+            <div class="classrooms-container">
+                <!-- Physics 101 Door -->
+                <div class="classroom-door-container" data-type="class" data-room="Physics 101" data-number="S101">
+                    <div class="classroom-door-frame">
+                        <div class="classroom-door">
+                            <div class="door-number">S101</div>
+                            <div class="door-title">Physics 101</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                            <div class="door-info">Prof. Johnson</div>
+                        </div>
+                    </div>
+                    <div class="door-type-indicator door-type-class">C</div>
+                </div>
+                
+                <!-- Chemistry Lab Door -->
+                <div class="classroom-door-container" data-type="lab" data-room="Chemistry Lab" data-number="S102">
+                    <div class="classroom-door-frame">
+                        <div class="classroom-door">
+                            <div class="door-number">S102</div>
+                            <div class="door-title">Chemistry Lab</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                            <div class="door-info">Prof. Martinez</div>
+                        </div>
+                    </div>
+                    <div class="door-type-indicator door-type-lab">L</div>
+                </div>
+                
+                <!-- Biology 201 Door -->
+                <div class="classroom-door-container" data-type="class" data-room="Biology 201" data-number="S201">
+                    <div class="classroom-door-frame">
+                        <div class="classroom-door">
+                            <div class="door-number">S201</div>
+                            <div class="door-title">Biology 201</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                            <div class="door-info">Prof. Chang</div>
+                        </div>
+                    </div>
+                    <div class="door-type-indicator door-type-class">C</div>
+                </div>
+                
+                <!-- Study Group Room A Door -->
+                <div class="classroom-door-container" data-type="meeting" data-room="Study Group Room A" data-number="S301">
+                    <div class="classroom-door-frame">
+                        <div class="classroom-door">
+                            <div class="door-number">S301</div>
+                            <div class="door-title">Study Group A</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                            <div class="door-info">Student-led</div>
+                        </div>
+                    </div>
+                    <div class="door-type-indicator door-type-meeting">M</div>
+                </div>
+                
+                <!-- Computer Science Lab Door -->
+                <div class="classroom-door-container" data-type="lab" data-room="Computer Science Lab" data-number="S103">
+                    <div class="classroom-door-frame">
+                        <div class="classroom-door">
+                            <div class="door-number">S103</div>
+                            <div class="door-title">CS Lab</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                            <div class="door-info">Prof. Williams</div>
+                        </div>
+                    </div>
+                    <div class="door-type-indicator door-type-lab">L</div>
+                </div>
+                
+                <!-- Conference Room B Door -->
+                <div class="classroom-door-container" data-type="meeting" data-room="Conference Room B" data-number="S302">
+                    <div class="classroom-door-frame">
+                        <div class="classroom-door">
+                            <div class="door-number">S302</div>
+                            <div class="door-title">Conference B</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                            <div class="door-info">Faculty Meetings</div>
+                        </div>
+                    </div>
+                    <div class="door-type-indicator door-type-meeting">M</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Player character -->
+        <div id="player">
+            <div class="player-highlight"></div>
+            <div class="student-head"></div>
+            <div class="student-hair"></div>
+            <div class="student-body"></div>
+            <div class="student-backpack"></div>
+            <div class="student-arm left">
+                <div class="student-hand"></div>
+            </div>
+            <div class="student-arm right">
+                <div class="student-hand"></div>
+            </div>
+            <div class="student-leg left">
+                <div class="student-shoe"></div>
+            </div>
+            <div class="student-leg right">
+                <div class="student-shoe"></div>
+            </div>
+            <div class="student-shadow"></div>
+        </div>
+        
+        <!-- Interaction prompt -->
+        <div class="interaction-prompt" id="interaction-prompt">Press E to enter the classroom</div>
+        
+        <div class="controls-hint">
+            <div>Move: <span class="key-hint">←</span><span class="key-hint">↑</span><span class="key-hint">→</span><span class="key-hint">↓</span></div>
+            <div>Enter: <span class="key-hint">E</span></div>
+        </div>
+        
+        <div class="back-btn" onclick="goBack()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </div>
+        
+        <div id="custom-cursor"></div>
+        
+        <div id="notification">Notification message</div>
+        
+        <div id="loading-screen">
+            <div class="walking-animation">
+                <div class="corridor">
+                    <div class="corridor-floor"></div>
+                    <div class="corridor-wall left"></div>
+                    <div class="corridor-wall right"></div>
+                    <div class="corridor-ceiling"></div>
+                    <div class="corridor-lights">
+                        <div class="light"></div>
+                        <div class="light"></div>
+                        <div class="light"></div>
+                        <div class="light"></div>
+                        <div class="light"></div>
+                    </div>
+                    <div class="corridor-doors">
+                        <div class="corridor-door left">
+                            <div class="door-number">S101</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                        </div>
+                        <div class="corridor-door right">
+                            <div class="door-number">S102</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                        </div>
+                        <div class="corridor-door left">
+                            <div class="door-number">S201</div>
+                            <div class="door-window"></div>
+                            <div class="door-handle"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="student-character">
+                    <div class="student-head"></div>
+                    <div class="student-hair"></div>
+                    <div class="student-body"></div>
+                    <div class="student-backpack"></div>
+                    <div class="student-arm left">
+                        <div class="student-hand"></div>
+                    </div>
+                    <div class="student-arm right">
+                        <div class="student-hand"></div>
+                    </div>
+                    <div class="student-leg left">
+                        <div class="student-shoe"></div>
+                    </div>
+                    <div class="student-leg right">
+                        <div class="student-shoe"></div>
+                    </div>
+                    <div class="student-shadow"></div>
+                </div>
+            </div>
+            <div class="loader"></div>
+            <div class="loading-text">Walking to Room <span id="destination-room" class="highlight-room">S101</span>...</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Variables
+        let cursorX = 0;
+        let cursorY = 0;
+        let progressInterval;
+        let playerX = window.innerWidth / 2;
+        let playerY = window.innerHeight / 2;
+        let isMovingUp = false;
+        let isMovingDown = false;
+        let isMovingLeft = false;
+        let isMovingRight = false;
+        let moveSpeed = 5;
+        let nearDoor = null;
+        let isWalking = false;
+        
+        // DOM elements
+        const customCursor = document.getElementById('custom-cursor');
+        const notificationElement = document.getElementById('notification');
+        const loadingScreen = document.getElementById('loading-screen');
+        const progressBar = document.getElementById('progress-bar');
+        const player = document.getElementById('player');
+        const interactionPrompt = document.getElementById('interaction-prompt');
+        const doors = document.querySelectorAll('.classroom-door-container');
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            setupCorridorDoors();
+            setupPlayer();
+            gameLoop();
+        });
+        
+        // Create background particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random position
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.opacity = Math.random() * 0.5 + 0.2;
+                
+                particlesContainer.appendChild(particle);
+                
+                // Gentle floating animation
+                setInterval(() => {
+                    const newX = parseFloat(particle.style.left) + (Math.random() * 2 - 1);
+                    const newY = parseFloat(particle.style.top) + (Math.random() * 2 - 1);
+                    
+                    particle.style.left = `${newX}px`;
+                    particle.style.top = `${newY}px`;
+                }, 2000);
+            }
+        }
+        
+        // Setup corridor doors
+        function setupCorridorDoors() {
+            const corridorDoors = document.querySelectorAll('.corridor-door');
+            corridorDoors.forEach((door, index) => {
+                // Position doors on left or right side
+                if (index % 2 === 0) {
+                    door.classList.add('left');
+                    door.style.left = '20%';
+                } else {
+                    door.classList.add('right');
+                    door.style.right = '20%';
+                }
+            });
+        }
+        
+        // Setup player
+        function setupPlayer() {
+            updatePlayerPosition();
+            
+            // Add keyboard event listeners
+            document.addEventListener('keydown', function(e) {
+                switch(e.key) {
+                    case 'ArrowUp':
+                        isMovingUp = true;
+                        break;
+                    case 'ArrowDown':
+                        isMovingDown = true;
+                        break;
+                    case 'ArrowLeft':
+                        isMovingLeft = true;
+                        break;
+                    case 'ArrowRight':
+                        isMovingRight = true;
+                        break;
+                    case 'e':
+                    case 'E':
+                        if (nearDoor) {
+                            enterRoom(nearDoor.dataset.room, nearDoor.dataset.number);
+                        }
+                        break;
+                }
+                
+                // Start walking animation if any movement key is pressed
+                if (isMovingUp || isMovingDown || isMovingLeft || isMovingRight) {
+                    startWalkingAnimation();
+                }
+            });
+            
+            document.addEventListener('keyup', function(e) {
+                switch(e.key) {
+                    case 'ArrowUp':
+                        isMovingUp = false;
+                        break;
+                    case 'ArrowDown':
+                        isMovingDown = false;
+                        break;
+                    case 'ArrowLeft':
+                        isMovingLeft = false;
+                        break;
+                    case 'ArrowRight':
+                        isMovingRight = false;
+                        break;
+                }
+                
+                // Stop walking animation if no movement keys are pressed
+                if (!isMovingUp && !isMovingDown && !isMovingLeft && !isMovingRight) {
+                    stopWalkingAnimation();
+                }
+            });
+        }
+        
+        // Start walking animation
+        function startWalkingAnimation() {
+            if (isWalking) return;
+            
+            isWalking = true;
+            const leftLeg = player.querySelector('.student-leg.left');
+            const rightLeg = player.querySelector('.student-leg.right');
+            const leftArm = player.querySelector('.student-arm.left');
+            const rightArm = player.querySelector('.student-arm.right');
+            
+            let step = 0;
+            player.walkInterval = setInterval(() => {
+                step = (step + 1) % 4;
+                
+                // Animate legs and arms
+                if (step === 0 || step === 2) {
+                    leftLeg.style.transform = 'rotate(-20deg)';
+                    rightLeg.style.transform = 'rotate(20deg)';
+                    leftArm.style.transform = 'rotate(15deg)';
+                    rightArm.style.transform = 'rotate(-15deg)';
+                } else {
+                    leftLeg.style.transform = 'rotate(20deg)';
+                    rightLeg.style.transform = 'rotate(-20deg)';
+                    leftArm.style.transform = 'rotate(-15deg)';
+                    rightArm.style.transform = 'rotate(15deg)';
+                }
+            }, 200);
+        }
+        
+        // Stop walking animation
+        function stopWalkingAnimation() {
+            if (!isWalking) return;
+            
+            isWalking = false;
+            clearInterval(player.walkInterval);
+            
+            const leftLeg = player.querySelector('.student-leg.left');
+            const rightLeg = player.querySelector('.student-leg.right');
+            const leftArm = player.querySelector('.student-arm.left');
+            const rightArm = player.querySelector('.student-arm.right');
+            
+            leftLeg.style.transform = '';
+            rightLeg.style.transform = '';
+            leftArm.style.transform = '';
+            rightArm.style.transform = '';
+        }
+        
+        // Game loop
+        function gameLoop() {
+            updatePlayerPosition();
+            checkDoorProximity();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Update player position
+        function updatePlayerPosition() {
+            // Calculate movement
+            let dx = 0;
+            let dy = 0;
+            
+            if (isMovingUp) dy -= moveSpeed;
+            if (isMovingDown) dy += moveSpeed;
+            if (isMovingLeft) dx -= moveSpeed;
+            if (isMovingRight) dx += moveSpeed;
+            
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                const factor = 1 / Math.sqrt(2);
+                dx *= factor;
+                dy *= factor;
+            }
+            
+            // Update position
+            playerX += dx;
+            playerY += dy;
+            
+            // Keep player within bounds
+            playerX = Math.max(20, Math.min(window.innerWidth - 20, playerX));
+            playerY = Math.max(20, Math.min(window.innerHeight - 20, playerY));
+            
+            // Update player element position
+            player.style.left = playerX + 'px';
+            player.style.top = playerY + 'px';
+            
+            // Flip player based on movement direction
+            if (dx < 0) {
+                player.style.transform = 'scaleX(-1)';
+            } else if (dx > 0) {
+                player.style.transform = 'scaleX(1)';
+            }
+        }
+        
+        // Check if player is near a door
+        function checkDoorProximity() {
+            let foundNearDoor = false;
+            
+            doors.forEach(door => {
+                const doorRect = door.getBoundingClientRect();
+                const doorCenterX = doorRect.left + doorRect.width / 2;
+                const doorCenterY = doorRect.top + doorRect.height / 2;
+                
+                const distance = Math.sqrt(
+                    Math.pow(playerX - doorCenterX, 2) + 
+                    Math.pow(playerY - doorCenterY, 2)
+                );
+                
+                // If player is near a door
+                if (distance < 100) {
+                    foundNearDoor = true;
+                    nearDoor = door;
+                    door.classList.add('door-highlight');
+                    interactionPrompt.textContent = `Press E to enter ${door.dataset.room}`;
+                    interactionPrompt.classList.add('show-prompt');
+                } else {
+                    door.classList.remove('door-highlight');
+                }
+            });
+            
+            if (!foundNearDoor) {
+                nearDoor = null;
+                interactionPrompt.classList.remove('show-prompt');
+            }
+        }
+        
+        // Filter rooms by type
+        function filterRooms(type) {
+            // Update active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter rooms
+            doors.forEach(door => {
+                if (type === 'all' || door.dataset.type === type) {
+                    door.style.display = 'block';
+                } else {
+                    door.style.display = 'none';
+                }
+            });
+        }
+        
+        // Enter a classroom
+        function enterRoom(roomName, roomNumber) {
+            const destRoom = document.getElementById('destination-room');
+            
+            // Set destination room name and number
+            destRoom.textContent = roomNumber;
+            
+            // Update corridor door numbers to match destination
+            updateCorridorDoors(roomNumber);
+            
+            // Show loading screen with walking animation
+            loadingScreen.classList.add('active');
+            
+            // Animate walking legs
+            animateWalking();
+            
+            // Start progress bar
+            startProgressBar();
+            
+            // Show notification
+            showNotification(`Walking to ${roomName}...`);
+            
+            // Simulate loading time
+            setTimeout(() => {
+                // Redirect to classroom page
+                window.location.href = `classroom.html?room=${encodeURIComponent(roomName)}&number=${encodeURIComponent(roomNumber)}`;
+            }, 5000);
+        }
+        
+        // Update corridor doors to match destination
+        function updateCorridorDoors(roomNumber) {
+            const doors = document.querySelectorAll('.corridor-door .door-number');
+            
+            // Set the middle door (that we'll approach) to the destination room
+            if (doors.length >= 2) {
+                doors[1].textContent = roomNumber;
+                doors[1].classList.add('highlight-room');
+            }
+            
+            // Set other doors to nearby room numbers
+            const roomPrefix = roomNumber.charAt(0);
+            const roomNum = parseInt(roomNumber.substring(1));
+            
+            if (doors.length >= 1) {
+                doors[0].textContent = `${roomPrefix}${roomNum - 1}`;
+            }
+            
+            if (doors.length >= 3) {
+                doors[2].textContent = `${roomPrefix}${roomNum + 1}`;
+            }
+        }
+        
+        // Start progress bar
+        function startProgressBar() {
+            let progress = 0;
+            progressBar.style.width = '0%';
+            
+            progressInterval = setInterval(() => {
+                progress += 0.5;
+                progressBar.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                }
+            }, 25);
+        }
+        
+        // Animate walking in loading screen
+        function animateWalking() {
+            const leftLeg = document.querySelector('.student-character .student-leg.left');
+            const rightLeg = document.querySelector('.student-character .student-leg.right');
+            const leftArm = document.querySelector('.student-character .student-arm.left');
+            const rightArm = document.querySelector('.student-character .student-arm.right');
+            
+            let step = 0;
+            const walkInterval = setInterval(() => {
+                step = (step + 1) % 4;
+                
+                // Animate legs and arms
+                if (step === 0 || step === 2) {
+                    leftLeg.style.transform = 'rotate(-20deg)';
+                    rightLeg.style.transform = 'rotate(20deg)';
+                    leftArm.style.transform = 'rotate(15deg)';
+                    rightArm.style.transform = 'rotate(-15deg)';
+                } else {
+                    leftLeg.style.transform = 'rotate(20deg)';
+                    rightLeg.style.transform = 'rotate(-20deg)';
+                    leftArm.style.transform = 'rotate(-15deg)';
+                    rightArm.style.transform = 'rotate(15deg)';
+                }
+            }, 200);
+            
+            // Clear interval after animation is done
+            setTimeout(() => {
+                clearInterval(walkInterval);
+            }, 5000);
+        }
+        
+        // Go back to campus
+        function goBack() {
+            showNotification("Returning to campus...");
+            loadingScreen.classList.add('active');
+            
+            // Start progress bar
+            startProgressBar();
+            
+            setTimeout(() => {
+                window.location.href = "college.html";
+            }, 1500);
+        }
+        
+        // Show notification
+        function showNotification(message) {
+            notificationElement.textContent = message;
+            notificationElement.classList.add('show');
+            
+            setTimeout(() => {
+                notificationElement.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Mouse move for custom cursor
+        document.addEventListener('mousemove', function(e) {
+            cursorX = e.clientX;
+            cursorY = e.clientY;
+            customCursor.style.left = cursorX + 'px';
+            customCursor.style.top = cursorY + 'px';
+        });
+        
+        // Click event for cursor animation
+        document.addEventListener('mousedown', function() {
+            customCursor.classList.add('cursor-active');
+        });
+        
+        document.addEventListener('mouseup', function() {
+            customCursor.classList.remove('cursor-active');
+        });
+    </script>
+</body>
+</html>
